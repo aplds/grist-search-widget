@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Column Search</title>
+  <title>Recherche dans une colonne</title>
   <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
   <style>
     body {
@@ -131,21 +131,21 @@
 <body>
   <div class="search-container">
     <div class="search-input-group">
-      <input type="text" id="searchInput" placeholder="Search column...">
+      <input type="text" id="searchInput" placeholder="Rechercher dans la colonne...">
       <button id="clearBtn" class="clear-btn">✕</button>
     </div>
     <div class="toggle-container">
-      <span>Partial match</span>
+      <span>Correspondance partielle</span>
       <label class="toggle-switch">
         <input type="checkbox" id="exactMatchToggle">
         <span class="slider"></span>
       </label>
-      <span>Exact match</span>
+      <span>Correspondance exacte</span>
     </div>
     <div class="nav-controls">
-      <button id="prevBtn" disabled>← Previous</button>
+      <button id="prevBtn" disabled>← Précédent</button>
       <div class="match-counter" id="matchCounter">-</div>
-      <button id="nextBtn" disabled>Next →</button>
+      <button id="nextBtn" disabled>Suivant →</button>
     </div>
   </div>
 
@@ -156,19 +156,19 @@
     let searchColumnId = null;
     let debounceTimer = null;
 
-    // Tell Grist we're ready and allow this widget to be used for linking
+    // Indiquer à Grist que le widget est prêt
     grist.ready({
       columns: [{name: "SearchColumn", type: "Text", optional: false}],
       requiredAccess: 'read table',
       allowSelectBy: true
     });
 
-    // Get all records from the table
+    // Récupérer tous les enregistrements de la table
     grist.onRecords(function(records, mappings) {
       allRecords = records;
       searchColumnId = mappings.SearchColumn;
-      
-      // Re-run search with current input
+
+      // Relancer la recherche avec la valeur actuelle
       const searchTerm = document.getElementById('searchInput').value;
       if (searchTerm) {
         performSearch(searchTerm);
@@ -182,7 +182,7 @@
     const matchCounter = document.getElementById('matchCounter');
     const exactMatchToggle = document.getElementById('exactMatchToggle');
 
-    // Debounced search on input
+    // Recherche différée lors de la saisie
     searchInput.addEventListener('input', function(e) {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
@@ -190,7 +190,7 @@
       }, 300);
     });
 
-    // Toggle exact match and re-search
+    // Basculer entre correspondance exacte et partielle
     exactMatchToggle.addEventListener('change', function() {
       const searchTerm = searchInput.value;
       if (searchTerm) {
@@ -198,7 +198,7 @@
       }
     });
 
-    // Enter key for next match
+    // Gestion des touches Entrée et Échap
     searchInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -212,6 +212,7 @@
       }
     });
 
+    // Effacer la recherche
     clearBtn.addEventListener('click', function() {
       searchInput.value = '';
       matchingRecords = [];
@@ -219,6 +220,7 @@
       updateUI();
     });
 
+    // Bouton "Précédent"
     prevBtn.addEventListener('click', function() {
       if (currentMatchIndex > 0) {
         currentMatchIndex--;
@@ -226,6 +228,7 @@
       }
     });
 
+    // Bouton "Suivant"
     nextBtn.addEventListener('click', function() {
       if (currentMatchIndex < matchingRecords.length - 1) {
         currentMatchIndex++;
@@ -233,6 +236,7 @@
       }
     });
 
+    // Fonction de recherche
     function performSearch(searchTerm) {
       if (!searchTerm.trim() || !searchColumnId) {
         matchingRecords = [];
@@ -243,17 +247,17 @@
 
       const isExactMatch = exactMatchToggle.checked;
       const lowerSearch = searchTerm.toLowerCase();
-      
+
       matchingRecords = allRecords.filter(record => {
         const value = record[searchColumnId];
         if (value == null) return false;
-        
+
         const lowerValue = String(value).toLowerCase();
-        
+
         if (isExactMatch) {
-          return lowerValue === lowerSearch;
+          return lowerValue === lowerSearch; // Recherche exacte
         } else {
-          return lowerValue.includes(lowerSearch);
+          return lowerValue.includes(lowerSearch); // Recherche partielle
         }
       });
 
@@ -266,40 +270,42 @@
       }
     }
 
+    // Naviguer vers la correspondance sélectionnée
     function navigateToMatch() {
       if (matchingRecords.length > 0 && currentMatchIndex >= 0) {
         const record = matchingRecords[currentMatchIndex];
-        
-        // Use setCursorPos to navigate to the row
+
+        // Utiliser setCursorPos pour naviguer vers la ligne
         grist.setCursorPos({rowId: record.id})
           .then(() => {
             updateUI();
           })
           .catch(err => {
-            console.error('Error setting cursor position:', err);
-            // Try alternative method using setSelectedRows
+            console.error('Erreur lors du positionnement du curseur :', err);
+            // Méthode alternative avec setSelectedRows
             return grist.setSelectedRows([record.id]);
           })
           .catch(err => {
-            console.error('Both navigation methods failed:', err);
+            console.error('Les deux méthodes de navigation ont échoué :', err);
             updateUI();
           });
       }
     }
 
+    // Mettre à jour l'interface utilisateur
     function updateUI() {
       if (matchingRecords.length === 0) {
-        matchCounter.innerHTML = '<span class="no-results">No matches</span>';
+        matchCounter.innerHTML = '<span class="no-results">Aucun résultat</span>';
         prevBtn.disabled = true;
         nextBtn.disabled = true;
       } else {
-        matchCounter.textContent = `${currentMatchIndex + 1} of ${matchingRecords.length}`;
+        matchCounter.textContent = `${currentMatchIndex + 1} sur ${matchingRecords.length}`;
         prevBtn.disabled = currentMatchIndex <= 0;
         nextBtn.disabled = currentMatchIndex >= matchingRecords.length - 1;
       }
     }
 
-    // Initialize UI
+    // Initialiser l'interface
     updateUI();
   </script>
 </body>
